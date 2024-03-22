@@ -19,6 +19,8 @@ ADDR_DSPL:
     .text
 	.globl main
 
+
+tiuhsdiufsadig
 main:
     li $t1, 0xff0000        # $t1 = red
     li $t2, 0x00ff00        # $t2 = green
