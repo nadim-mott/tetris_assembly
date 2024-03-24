@@ -6,31 +6,137 @@ displayaddress: .word 0x10008000
 # . . .
 
 lw $t0, displayaddress  # $t0 = base address for display
-li $t4, 0x00ff00        # $t4 = green
-li $t8, 0xff0000        # $t8 = red
-li $t9, 0x0000ff        # $t9 = blue
-li $s1, 1               # $t7 = 0 iff we don't want checkers
+li $t4, 0xffffff        # $t4 = white
+li $t8, 0x161616        # $t8 = grey1
+li $t9, 0x010101        # $t9 = grey2
+li $s1, 0               # $s1 = 0 iff we don't want checkers
 # Bottom
-addi $a0, $zero, 5      # set x coordinate of line to 2
-addi $a1, $zero, 27      # set x coordinate of line to 2
-addi $a2, $zero, 12      # set length of line to 8
-addi $a3, $zero, 1      # set length of line to 8
+addi $a0, $zero, 5      # set x coordinate
+addi $a1, $zero, 27      # set y coordinate
+addi $a2, $zero, 12      # set length of line
+addi $a3, $zero, 1      # set height of line
 jal draw_rectangle        # call the rectangle-drawing function
 
+# Inside of grid:
+li $s1, 1               # $s1 = 0 iff we don't want checkers
+addi $a0, $zero, 6      # set x coordinate
+addi $a1, $zero, 5      # set y coordinate
+addi $a2, $zero, 11      # set length of line
+addi $a3, $zero, 22      # set height of line
+jal draw_rectangle        # call the rectangle-drawing function
+li $s1, 0
 # Left line
-addi $a0, $zero, 5      # set x coordinate of line to 2
-addi $a1, $zero, 5      # set x coordinate of line to 2
+addi $a0, $zero, 5      # set x coordinate
+addi $a1, $zero, 5      # set y coordinate
 addi $a2, $zero, 1      # set length of line to 8
-addi $a3, $zero, 22      # set length of line to 8
+addi $a3, $zero, 22      # set height of line
 jal draw_rectangle        # call the rectangle-drawing function
 
 # Right
-addi $a0, $zero, 16      # set x coordinate of line to 2
-addi $a1, $zero, 5      # set x coordinate of line to 2
-addi $a2, $zero, 1      # set length of line to 8
-addi $a3, $zero, 22      # set length of line to 8
+addi $a0, $zero, 16      # set x coordinate
+addi $a1, $zero, 5      # set y coordinate
+addi $a2, $zero, 1      # set length of line
+addi $a3, $zero, 22      # set height of line 
 jal draw_rectangle        # call the rectangle-drawing function
 
+li $s0 6
+# Choose tetromino
+beq $s0 0 draw_o
+beq $s0 1 draw_i
+beq $s0 2 draw_s
+beq $s0 3 draw_z
+beq $s0 4 draw_l
+beq $s0 5 draw_j
+beq $s0 6 draw_t
+
+# Draw tetromino:
+draw_o:
+li $t4, 0xffff00        # $t4 = Yellow
+addi $a0, $zero, 11      # set x coordinate
+addi $a1, $zero, 5      # set y coordinate
+addi $a2, $zero, 2      # set length of line
+addi $a3, $zero, 2      # set height of line 
+jal draw_rectangle        # call the rectangle-drawing function
+j functionend
+
+draw_i:
+li $t4, 0x00ffff        # $t4 = Teal
+addi $a0, $zero, 11      # set x coordinate
+addi $a1, $zero, 5      # set y coordinate
+addi $a2, $zero, 1      # set length of line
+addi $a3, $zero, 4      # set height of line 
+jal draw_rectangle        # call the rectangle-drawing function
+j functionend
+
+draw_s:
+li $t4, 0xff0000        # $t4 = red
+addi $a0, $zero, 11      # set x coordinate
+addi $a1, $zero, 5      # set y coordinate
+addi $a2, $zero, 1      # set length of line
+addi $a3, $zero, 2      # set height of line 
+jal draw_rectangle        # call the rectangle-drawing function
+addi $a0, $zero, 12      # set x coordinate
+addi $a1, $zero, 6      # set y coordinate
+addi $a2, $zero, 1      # set length of line
+addi $a3, $zero, 2      # set height of line 
+jal draw_rectangle        # call the rectangle-drawing function
+j functionend
+
+draw_z:
+li $t4, 0x00ff00        # $t4 = green
+addi $a0, $zero, 12      # set x coordinate
+addi $a1, $zero, 5      # set y coordinate
+addi $a2, $zero, 1      # set length of line
+addi $a3, $zero, 2      # set height of line 
+jal draw_rectangle        # call the rectangle-drawing function
+addi $a0, $zero, 11      # set x coordinate
+addi $a1, $zero, 6      # set y coordinate
+addi $a2, $zero, 1      # set length of line
+addi $a3, $zero, 2      # set height of line 
+jal draw_rectangle        # call the rectangle-drawing function
+j functionend
+
+draw_l:
+li $t4, 0xff4000        # $t4 = orange
+addi $a0, $zero, 11      # set x coordinate
+addi $a1, $zero, 5      # set y coordinate
+addi $a2, $zero, 1      # set length of line
+addi $a3, $zero, 3      # set height of line 
+jal draw_rectangle        # call the rectangle-drawing function
+addi $a0, $zero, 11      # set x coordinate
+addi $a1, $zero, 7      # set y coordinate
+addi $a2, $zero, 2      # set length of line
+addi $a3, $zero, 1      # set height of line 
+jal draw_rectangle        # call the rectangle-drawing function
+j functionend
+
+draw_j:
+li $t4, 0xff00ff        # $t4 = pink
+addi $a0, $zero, 12      # set x coordinate
+addi $a1, $zero, 5      # set y coordinate
+addi $a2, $zero, 1      # set length of line
+addi $a3, $zero, 3      # set height of line 
+jal draw_rectangle        # call the rectangle-drawing function
+addi $a0, $zero, 11      # set x coordinate
+addi $a1, $zero, 7      # set y coordinate
+addi $a2, $zero, 2      # set length of line
+addi $a3, $zero, 1      # set height of line 
+jal draw_rectangle        # call the rectangle-drawing function
+j functionend
+
+draw_t:
+li $t4, 0x9100FF        # $t4 = purple
+addi $a0, $zero, 10      # set x coordinate
+addi $a1, $zero, 5      # set y coordinate
+addi $a2, $zero, 3      # set length of line
+addi $a3, $zero, 1      # set height of line 
+jal draw_rectangle        # call the rectangle-drawing function
+addi $a0, $zero, 11      # set x coordinate
+addi $a1, $zero, 5      # set y coordinate
+addi $a2, $zero, 1      # set length of line
+addi $a3, $zero, 2      # set height of line 
+jal draw_rectangle        # call the rectangle-drawing function
+j functionend
 
 
 
@@ -65,7 +171,7 @@ sw $t4, 0($t3)              # paint the current unit on the first row yellow
 j colorsetcomplete
 checkers:
 sw $t8, 0($t3)              # paint the current unit on the first row yellow
-j colorsetcomplete
+
 beq $t7, $zero, caseblue
 casered:
 sw $t8, 0($t3)
@@ -75,16 +181,17 @@ caseblue:
 sw $t9, 0($t3)
 addi $t7 $zero 1
 endcases:
-
+j colorsetcomplete
 colorsetcomplete:
 addi $t1, $t1, 4            # move horizontal offset to the right by one pixel
 beq $t1, $t5, inner_end     # break out of the line-drawing loop
 j inner_top                 # jump to the start of the inner loop
 inner_end:
-
 addi $t2, $t2, 128          # move vertical offset down by one line
 beq $t2, $t6, outer_end     # on last line, break out of the outer loop
 j outer_top                 # jump to the top of the outer loop
 outer_end:
 
 jr $ra                      # return to calling program
+
+functionend:
