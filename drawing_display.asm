@@ -155,7 +155,7 @@ j functionend
 # - $a1: the y coordinate of the starting point for this line.
 # - $a2: the length of this line, measured in pixels
 # - $a3: the height of this line, measured in pixels
-# - $t0: the address of the first pixel (top left) in the bitmap
+# - $t0: the address of the first pixel (top left)
 # - $t1: the horizontal offset of the first pixel in the line.
 # - $t2: the vertical offset of the first pixel in the line.
 # - #t3: the location in bitmap memory of the current pixel to draw 

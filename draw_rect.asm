@@ -39,7 +39,7 @@ addi $a2, $zero, 1      # set length of line
 addi $a3, $zero, 22      # set height of line 
 jal draw_rectangle        # call the rectangle-drawing function
 
-li $s0 6
+li $s0 5
 # Choose tetromino
 beq $s0 0 draw_o
 beq $s0 1 draw_i
