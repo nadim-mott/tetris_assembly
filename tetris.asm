@@ -34,6 +34,7 @@ grid_x: .word 5
 grid_y: .word 5
 grid_width: .word 12
 grid_height: .word 22
+grid_address: .space 4096
 
 
 # Color Constants:
@@ -50,7 +51,7 @@ c_purple: .word 0x9100ff
 
 # Tetromino_maps:
 o_bit_map: .byte '0', '0', '0', '0', '0', '1', '1', '0', '0', '1', '1', '0', '0', '0', '0', '0'
-i_bit_map: .byte '0', '0', '0', '1', '0', '0', '0', '1', '0', '0', '0', '1', '0', '0', '0', '1'
+i_bit_map: .byte '0', '0', '1', '0', '0', '0', '1', '0', '0', '0', '1', '0', '0', '0', '1', '0'
 s_bit_map: .byte '0', '0', '0', '0', '0', '1', '1', '0', '1', '1', '0', '0', '0', '0', '0', '0'
 z_bit_map: .byte '0', '0', '0', '0', '0', '0', '1', '1', '0', '0', '1', '1', '0', '0', '0', '0'
 l_bit_map: .byte '0', '0', '0', '0', '0', '1', '0', '0', '0', '1', '0', '0', '0', '1', '1', '0'
@@ -65,54 +66,51 @@ t_bit_map: .byte '0', '0', '0', '0', '0', '1', '1', '1', '0', '0', '1', '0', '0'
 
 	# Run the Tetris game.
 main:
-
-    draw_grid:
-        # Initialize the game
-        lw $t0, ADDR_DSPL  # $t0 = base address for display
-        lw $t4, c_white        # $t4 = white
-        lw $t8, c_white        # $t8 = white  
+    # Initialize the game
+    la $t0, grid_address  # $t0 = base address for display
+    lw $t4, c_white        # $t4 = white
+    lw $t8, c_white        # $t8 = white  
     
-        
-        # Bottom
-        lw $a0, grid_x  # set x coordinate
-        lw $t1, grid_y # store grid_y in t1
-        lw $t2, grid_height
-        add $a1, $t1, $t2 # set y coordinate    
-        lw $a2, grid_width      # set length of line
-        li $a3, 1      # set height of line
-        jal draw_rectangle        # call the rectangle-drawing function
-        
-        # Inside of grid:
-        lw $t8, c_grey1        # $t8 = grey1
-        lw $t4, c_grey2        # $t4 = grey2
-        lw $a0, grid_x
-        addi $a0, $a0, 1      # set x coordinate
-        lw $a1, grid_y      # set y coordinate
-        lw $a2, grid_width      # set width of line
-        subi $a2, $a2, 1
-        lw $a3, grid_height      # set height of line
-        jal draw_rectangle        # call the rectangle-drawing function
-        li $s1, 0
-        
-        lw $t4, c_white        # $t4 = white
-        lw $t8, c_white        # $t8 = white  
-        # Left line
-        lw $a0, grid_x      # set x coordinate
-        lw $a1, grid_y      # set y coordinate
-        li $a2, 1      # set length of line to 8
-        lw $a3, grid_height      # set height of line
-        jal draw_rectangle        # call the rectangle-drawing function
-        
-        # Right
-        
-        lw $a0, grid_x      # set x coordinate
-        lw $t1, grid_width
-        add $a0, $a0, $t1
-        subi $a0, $a0, 1
-        lw $a1, grid_y      # set y coordinate
-        li $a2, 1     # set length of line
-        lw $a3, grid_height      # set height of line 
-        jal draw_rectangle        # call the rectangle-drawing function   
+    # Bottom
+    lw $a0, grid_x  # set x coordinate
+    lw $t1, grid_y # store grid_y in t1
+    lw $t2, grid_height
+    add $a1, $t1, $t2 # set y coordinate    
+    lw $a2, grid_width      # set length of line
+    li $a3, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    # Inside of grid:
+    lw $t8, c_grey1        # $t8 = grey1
+    lw $t4, c_grey2        # $t4 = grey2
+    lw $a0, grid_x
+    addi $a0, $a0, 1      # set x coordinate
+    lw $a1, grid_y      # set y coordinate
+    lw $a2, grid_width      # set width of line
+    subi $a2, $a2, 1
+    lw $a3, grid_height      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    li $s1, 0
+    
+    lw $t4, c_white        # $t4 = white
+    lw $t8, c_white        # $t8 = white  
+    # Left line
+    lw $a0, grid_x      # set x coordinate
+    lw $a1, grid_y      # set y coordinate
+    li $a2, 1      # set length of line to 8
+    lw $a3, grid_height      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    # Right
+    
+    lw $a0, grid_x      # set x coordinate
+    lw $t1, grid_width
+    add $a0, $a0, $t1
+    subi $a0, $a0, 1
+    lw $a1, grid_y      # set y coordinate
+    li $a2, 1     # set length of line
+    lw $a3, grid_height      # set height of line 
+    jal draw_rectangle        # call the rectangle-drawing function   
 
 game_loop:
 	# 1a. Check if key has been pressed
@@ -120,12 +118,23 @@ game_loop:
     # 2a. Check for collisions
 	# 2b. Update locations (paddle, ball)
 	# 3. Draw the screen
+	lw $a0 ADDR_DSPL
+	la $a1 grid_address
+	jal draw_grid
+	lw $t0 ADDR_DSPL
+	li $a0 0
+	li $a1 5
+	li $a2 5
+	li $a3 3
+	jal draw_new_block
+	
+	
 	# 4. Sleep
-
-    #5. Go back to 1
     li $v0, 32
     li $a0, 1000
     syscall
+    #5. Go back to 1
+   
     b game_loop
 
 
@@ -175,22 +184,102 @@ j function_end
         j draw_rectangle_outer_top                 # jump to the top of the outer loop
         draw_rectangle_outer_end:
         jr $ra
-        
+    
+    draw_grid:
+    # - $a0 starting display address
+    # - $a1 starting memory address
+    # - $t0 current display address
+    # - $t1 current address in memory
+    # - $t2 current value in memory
+    # - $t3 final location in memory
+    
+    add $t0, $zero, $a0
+    add $t1, $zero, $a1
+    addi $t3, $a1, 4096
+        draw_grid_loop_top:
+            lw $t2, 0($t1)
+            sw $t2, 0($t0)
+            beq $t1, $t3, draw_grid_end_loop
+            addi $t0, $t0, 4
+            addi $t1, $t1, 4
+            j draw_grid_loop_top
+        draw_grid_end_loop:
+    jr $ra
+    
+    
+    
+    
     draw_new_block:
     # - $t0 display address
     # - $a0 code for the block that will be drawn
     # - $a1 x_coordinate
     # - $a2 y_coordinate
     # - $a3 rotation
+    # - $t1 current position in block array
     # - $t2 color of tetromino
+    # - $t3 current position in bitmap
+    # - $t5 range from 1 to 16
+    # - $t6 row complete change
+    # - $t7 column complete change
+    
         case_draw_i:
-            la $1 i_bit_map
+            la $t1 i_bit_map
             lw $t2 c_teal
+            j decide_rotation_case
+        
+        decide_rotation_case:
+            beq $a3 0 case_rotation_0
+            beq $a3 1 case_rotation_1
+            beq $a3 2 case_rotation_2
+            beq $a3 3 case_rotation_3
+        case_rotation_0:
+            li $t6 1
+            li $t7 0
+            j begin_drawing_block
+        case_rotation_1:
+            addi $t1, $t1, 3
+            li $t6 4
+            li $t7 -17
+            j begin_drawing_block
+        case_rotation_2:
+            addi $t1, $t1, 15
+            li $t6 -1
+            li $t7 0
+            j begin_drawing_block
+        case_rotation_3:
+            addi $t1, $t1, 12
+            li $t6 -4
+            li $t7 17
             j begin_drawing_block
         
+        
         begin_drawing_block:
-           sll $t3, $a2, 7
-           
+            li $t5 0
+            sll $t3, $a2, 7
+            sll $t4, $a1, 2
+            add $t3, $t4, $t3
+            add $t3, $t0, $t3
+            # t4 is free
+            draw_block_outer_loop:
+                draw_block_draw_row:
+                lb $t4, 0($t1)
+                li $t8, '0'
+                beq $t4, $t8, draw_block_draw_row_update_vals
+                sw $t2, 0($t3)
+                draw_block_draw_row_update_vals:
+                add $t1, $t1, $t6
+                addi $t3, $t3, 4
+                addi $t5, $t5 1
+                
+                # Check if $t5 is divisible by 4
+                li $t8, 4
+                div $t4, $t5, $t8
+                mfhi $t4
+                bne $t4, $zero draw_block_outer_loop
+            addi $t3, $t3, 112
+            add $t1, $t1, $t7
+            li $t4, 16
+            bne $t5, $t4, draw_block_outer_loop
            
         
     
