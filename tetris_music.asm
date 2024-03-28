@@ -1,5 +1,5 @@
 ##############################################################################
-# Example: Tetris Music
+# Tetris Music
 #
 # This file demonstrates how to play the Tetris theme music in MIPS assembly.
 ##############################################################################
