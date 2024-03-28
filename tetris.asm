@@ -53,10 +53,19 @@ c_purple: .word 0x9100ff
 o_bit_map: .byte '0', '0', '0', '0', '0', '1', '1', '0', '0', '1', '1', '0', '0', '0', '0', '0'
 i_bit_map: .byte '0', '0', '1', '0', '0', '0', '1', '0', '0', '0', '1', '0', '0', '0', '1', '0'
 s_bit_map: .byte '0', '0', '0', '0', '0', '1', '1', '0', '1', '1', '0', '0', '0', '0', '0', '0'
-z_bit_map: .byte '0', '0', '0', '0', '0', '0', '1', '1', '0', '0', '1', '1', '0', '0', '0', '0'
+z_bit_map: .byte '0', '0', '0', '0', '0', '1', '1', '0', '0', '0', '1', '1', '0', '0', '0', '0'
 l_bit_map: .byte '0', '0', '0', '0', '0', '1', '0', '0', '0', '1', '0', '0', '0', '1', '1', '0'
 j_bit_map: .byte '0', '0', '0', '0', '0', '0', '1', '0', '0', '0', '1', '0', '0', '1', '1', '0'
 t_bit_map: .byte '0', '0', '0', '0', '0', '1', '1', '1', '0', '0', '1', '0', '0', '0', '0', '0'
+
+# Player controls:
+block_start_x: .word 8
+block_start_y: .word 5
+curr_block_x: .word 9
+curr_block_y: .word 5
+curr_block_type: .byte 0
+curr_block_rotation: .byte 0
+
 
 ##############################################################################
 # Code
@@ -114,31 +123,78 @@ main:
 
 game_loop:
 	# 1a. Check if key has been pressed
+	lw $t0, ADDR_KBRD               # $t0 = base address for keyboard
+    lw $t8, 0($t0)                  # Load first word from keyboard
+    bne $t8, 1, no_keyboard_input      # If first word 1, key is pressed
     # 1b. Check which key has been pressed
+    jal respond_to_keyboard_input
+    
+    no_keyboard_input:
+    
     # 2a. Check for collisions
 	# 2b. Update locations (paddle, ball)
 	# 3. Draw the screen
 	lw $a0 ADDR_DSPL
 	la $a1 grid_address
 	jal draw_grid
-	lw $t0 ADDR_DSPL
-	li $a0 0
-	li $a1 5
-	li $a2 5
-	li $a3 3
-	jal draw_new_block
 	
+	
+	# Draw Block
+	lw $t0 ADDR_DSPL
+	lb $a0 curr_block_type
+	lw $a1 curr_block_x
+	lw $a2 curr_block_y
+	lb $a3 curr_block_rotation
+	jal draw_new_block
 	
 	# 4. Sleep
     li $v0, 32
-    li $a0, 1000
+    li $a0, 1
     syscall
     #5. Go back to 1
    
-    b game_loop
+    j game_loop
 
 
 j function_end
+    respond_to_keyboard_input:
+    # - $t0: address of keyboard
+    # - $t1: key_pressed
+        lw $t0, ADDR_KBRD               # $t0 = base address for keyboard
+        lw $t1, 4($t0)                  # Load second word from keyboard
+        beq $t1, 0x61, respond_to_A
+        beq $t1, 0x77, respond_to_W
+        beq $t1, 0x73, respond_to_S
+        beq $t1, 0x64, respond_to_D
+        j end_respond_to_keyboard
+        
+        respond_to_A:
+            lw $t2, curr_block_x
+            addi $t2, $t2, -1
+            sw $t2, curr_block_x
+            j end_respond_to_keyboard
+        respond_to_W:
+            lb $t2, curr_block_rotation
+            addi $t2, $t2, 1
+            bne $t2, 4, update_rotation
+            li $t2, 0
+            update_rotation:
+            sb $t2, curr_block_rotation
+            j end_respond_to_keyboard
+        respond_to_D:
+            lw $t2, curr_block_x
+            addi $t2, $t2, 1
+            sw $t2, curr_block_x
+            j end_respond_to_keyboard
+        respond_to_S:
+            lw $t2, curr_block_y
+            addi $t2, $t2, 1
+            sw $t2, curr_block_y
+            j end_respond_to_keyboard
+    end_respond_to_keyboard:
+    jr $ra
+    
+    
     draw_rectangle:
     # The code for drawing a rectangle
     # - $a0: the x coordinate of the starting point for this line.
@@ -221,11 +277,42 @@ j function_end
     # - $t5 range from 1 to 16
     # - $t6 row complete change
     # - $t7 column complete change
-    
+        beq $a0 0 case_draw_o
+        beq $a0 1 case_draw_i
+        beq $a0 2 case_draw_s
+        beq $a0 3 case_draw_z
+        beq $a0 4 case_draw_l
+        beq $a0 5 case_draw_j
+        beq $a0 6 case_draw_t
+        
+        case_draw_o:
+            la $t1 o_bit_map
+            lw $t2 c_yellow
+            j decide_rotation_case
         case_draw_i:
             la $t1 i_bit_map
             lw $t2 c_teal
             j decide_rotation_case
+        case_draw_s:
+            la $t1 s_bit_map
+            lw $t2 c_red
+            j decide_rotation_case 
+        case_draw_z:
+            la $t1 z_bit_map
+            lw $t2 c_green
+            j decide_rotation_case 
+        case_draw_l:
+            la $t1 l_bit_map
+            lw $t2 c_orange
+            j decide_rotation_case 
+        case_draw_j:
+            la $t1 j_bit_map
+            lw $t2 c_pink
+            j decide_rotation_case
+        case_draw_t:
+            la $t1 t_bit_map
+            lw $t2 c_purple
+            j decide_rotation_case 
         
         decide_rotation_case:
             beq $a3 0 case_rotation_0
@@ -254,6 +341,7 @@ j function_end
         
         
         begin_drawing_block:
+            lw $t0, ADDR_DSPL
             li $t5 0
             sll $t3, $a2, 7
             sll $t4, $a1, 2
@@ -280,7 +368,40 @@ j function_end
             add $t1, $t1, $t7
             li $t4, 16
             bne $t5, $t4, draw_block_outer_loop
-           
+        jr $ra
+        
+        
+    place_meeting:
+    # - $a0 x coordinate
+    # - $a1 y coordinate
+    # - $t0 minimum x
+    # - $t1 maximum x
+    # - $t2 maximum y
+    lw $t0, grid_x
+    addi $t0, $t0, 1
+    lw $t1, grid_width
+    add $t1, $t1, $t0
+    lw $t2, grid_y
+    lw $t3, grid_height
+    add $t2, $t2, $t3
+    sub $t0, $t0, $a0
+    sub $t1, $t1, $a0
+    sub $t2, $t2, $a1
+    subi $t1, $t1, 2
+    blez $t0, place_meeting_condition1
+    li $v0 1
+    jr $ra 
+    place_meeting_condition1:
+    bgtz $t1, place_meeting_condition2
+    li $v0 1
+    jr $ra 
+    place_meeting_condition2:
+    bgtz $t2, place_meeting_condition3
+    li $v0 1
+    jr $ra 
+    place_meeting_condition3:
+    li $v0 0
+    jr $ra  
         
     
     
