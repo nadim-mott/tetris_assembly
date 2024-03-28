@@ -1,6 +1,6 @@
 ##############################################################################
 # Tetris Music
-#
+# Progress: Debugging to determine why no sound is being made.
 # This file demonstrates how to play the Tetris theme music in MIPS assembly.
 ##############################################################################
 
