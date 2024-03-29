@@ -202,6 +202,11 @@ j function_end
             lw $a2, curr_block_y
             lb $a3, curr_block_rotation
             jal place_meeting_block
+            addi $sp, $sp, -4   
+            sw $v0, 0($sp)
+            jal play_lr_sound_effect
+            lw $v0, 0($sp)
+            addi $sp, $sp, 4
             lw $ra, 0($sp)
             addi $sp, $sp, 4
             lw $t2, 0($sp)
@@ -228,6 +233,11 @@ j function_end
             lw $a2, curr_block_y
             add $a3, $t2, $zero
             jal place_meeting_block
+            addi $sp, $sp, -4   
+            sw $v0, 0($sp)
+            jal play_lr_sound_effect
+            lw $v0, 0($sp)
+            addi $sp, $sp, 4
             lw $ra, 0($sp)
             addi $sp, $sp, 4
             lw $t2, 0($sp)
@@ -249,6 +259,11 @@ j function_end
             lw $a2, curr_block_y
             lb $a3, curr_block_rotation
             jal place_meeting_block
+            addi $sp, $sp, -4   
+            sw $v0, 0($sp)
+            jal play_lr_sound_effect
+            lw $v0, 0($sp)
+            addi $sp, $sp, 4
             lw $ra, 0($sp)
             addi $sp, $sp, 4
             lw $t2, 0($sp)
@@ -852,7 +867,7 @@ j function_end
             lb $t6 0($t4)
             beq $t6, '7', upd
             addi $t1, $t1, 1
-            beq $t1, $t0 complete_row_found
+            beq $t1, $t0 play_delete_sound_effect
             upd:
             addi $t4, $t4, 1
             addi $t5, $t5, 1
@@ -883,6 +898,36 @@ j function_end
         j complete_row_found
         done_completing_rows:
         jr $ra
+        
+        
+        play_delete_sound_effect:
+            li  $v0, 33        # Load immediate value 33 into register $v0 (syscall code for playing sound)
+            addi $a0, $zero, 50    # Add immediate: set $a0 to the frequency of the sound (50)
+            addi $a1, $zero, 100   # Add immediate: set $a1 to the volume of the sound (100)
+            addi $a2, $zero, 121   # Add immediate: set $a2 to the wave type of the sound (121)
+            addi $a3, $zero, 127   # Add immediate: set $a3 to the sound duration (127)
+            syscall            # Perform the system call to play the sound
+        j complete_row_found             
+        
+        # Function to play the move left/right sound effect
+        play_lr_sound_effect:
+            li  $v0, 33        # Load immediate value 33 into register $v0 (syscall code for playing sound)
+            addi $a0, $zero, 50    # Add immediate: set $a0 to the frequency of the sound (50)
+            addi $a1, $zero, 100   # Add immediate: set $a1 to the volume of the sound (100)
+            addi $a2, $zero, 50   # Add immediate: set $a2 to the wave type of the sound (121)
+            addi $a3, $zero, 127   # Add immediate: set $a3 to the sound duration (127)
+            syscall            # Perform the system call to play the sound
+            jr $ra             # Jump back to the calling routine (likely the end of a function)
+            
+        # Function to play the clap sound effect
+        play_clap_sound_effect:
+            li  $v0, 33        # Load immediate value 33 into register $v0 (syscall code for playing sound)
+            addi $a0, $zero, 100  # Set $a0 to the frequency of the clap sound (adjust as needed)
+            addi $a1, $zero, 100   # Set $a1 to the volume of the clap sound
+            addi $a2, $zero, 5     # Set $a2 to the wave type for a simple waveform for the clap sound
+            addi $a3, $zero, 127   # Set $a3 to the sound duration (adjust as needed)
+            syscall            # Perform the system call to play the sound
+            jr $ra             # Jump back to the calling routine (likely the end of a function)
         
         
         
