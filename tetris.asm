@@ -866,6 +866,22 @@ j function_end
         jr $ra
         
         complete_row_found:
+        beq $t2, 1 done_completing_rows
+        la $t4, collision_mask
+        sll $t0, $t2, 5 # mult by 32
+        add $t4, $t4, $t0
+        li $t1, 0
+        loop_delete_row_top:
+        beq $t1 32 loop_delete_row_bottom
+        lb $t0, -32($t4)
+        sb $t0, 0($t4)        
+        addi $t4, $t4, 1
+        addi $t1, $t1, 1
+        j loop_delete_row_top
+        loop_delete_row_bottom:
+        subi $t2, $t2, 1
+        j complete_row_found
+        done_completing_rows:
         jr $ra
         
         
