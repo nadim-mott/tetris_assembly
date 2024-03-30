@@ -24,8 +24,7 @@ ADDR_KBRD: .word 0xffff0000 # The address of the keyboard. Don't forget to conne
 ##############################################################################
 # game values:
 time: .word 0
-
-
+game_state: .word 0
 # Bitmap Constants:
 display_width: .word 64
 display_height: .word 64
@@ -64,6 +63,14 @@ z_bit_map: .byte '0', '0', '0', '0', '0', '1', '1', '0', '0', '0', '1', '1', '0'
 l_bit_map: .byte '0', '0', '0', '0', '0', '1', '0', '0', '0', '1', '0', '0', '0', '1', '1', '0'
 j_bit_map: .byte '0', '0', '0', '0', '0', '0', '1', '0', '0', '0', '1', '0', '0', '1', '1', '0'
 t_bit_map: .byte '0', '0', '0', '0', '0', '1', '1', '1', '0', '0', '1', '0', '0', '0', '0', '0'
+
+pause_bit_map: .byte '0', '1', '0', '1', '0', '1', '0', '1', '0', '1', '0', '1', '0', '0', '0', '0'
+
+sad_bit_map: .byte  '1', '0', '0', '1',
+                    '0', '0', '0', '0',
+                    '0', '1', '1', '0',
+                    '1', '0', '0', '1'
+
 
 # Player controls:
 block_start_x: .word 8
@@ -136,8 +143,29 @@ game_loop:
     bne $t8, 1, no_keyboard_input      # If first word 1, key is pressed
     # 1b. Check which key has been pressed
     jal respond_to_keyboard_input
-    
     no_keyboard_input:
+    lw $t3, game_state
+    
+    
+    beq $t3, 0 no_pause
+    bne $t3, 1 game_over
+    lw $t0 ADDR_DSPL
+	li $a0 7
+	li $a1 26
+	li $a2 2
+	li $a3 0
+    jal draw_new_block
+    j sleep
+    game_over:
+    lw $t0 ADDR_DSPL
+	li $a0 8
+	li $a1 26
+	li $a2 2
+	li $a3 0
+    jal draw_new_block
+    j sleep
+    no_pause:
+    
     
     # 2a. Check for collisions
 	# 2b. Update locations (paddle, ball)
@@ -183,12 +211,46 @@ j function_end
     # - $t1: key_pressed
         lw $t0, ADDR_KBRD               # $t0 = base address for keyboard
         lw $t1, 4($t0)                  # Load second word from keyboard
+        
+        beq $t1, 0x70, respond_to_p
+        
+        lw $t3, game_state
+        bne $t3, 0 end_respond_to_keyboard
+        
         beq $t1, 0x61, respond_to_A
         beq $t1, 0x77, respond_to_W
         beq $t1, 0x73, respond_to_S
         beq $t1, 0x64, respond_to_D
         j end_respond_to_keyboard
         
+        respond_to_p:
+            lw $t2, game_state
+            beq $t2, 0, change_pause_state_to_paused
+            beq $t2, 1, change_pause_state_to_unpause
+            beq $t2, 2, retry
+            j end_respond_to_keyboard
+            change_pause_state_to_paused:
+            li $t2, 1
+            sw $t2, game_state
+            j end_respond_to_keyboard
+            change_pause_state_to_unpause:
+            li $t2, 0
+            sw $t2, game_state
+            j end_respond_to_keyboard
+            retry:
+            li $t2, 0
+            sw $t2, game_state
+            addi $sp, $sp, -4   
+            sw $ra, 0($sp) 
+            jal clear_collision
+            lw $ra, 0($sp)
+            addi $sp, $sp, 4
+            
+            
+            
+            j end_respond_to_keyboard
+            
+            
         respond_to_A:
             lw $t2, curr_block_x
             addi $t2, $t2, -1
@@ -399,6 +461,8 @@ j function_end
         beq $a0 4 case_draw_l
         beq $a0 5 case_draw_j
         beq $a0 6 case_draw_t
+        beq $a0 7 case_draw_pause
+        beq $a0 8 case_draw_sad
         
         case_draw_o:
             la $t1 o_bit_map
@@ -428,7 +492,16 @@ j function_end
             la $t1 t_bit_map
             lw $t2 c_purple
             j decide_rotation_case 
-        
+        case_draw_pause:
+            la $t1 pause_bit_map
+            lw $t2 c_white
+            j decide_rotation_case 
+        case_draw_sad:
+            la $t1 sad_bit_map
+            lw $t2 c_white
+            j decide_rotation_case 
+            
+            
         decide_rotation_case:
             beq $a3 0 case_rotation_0
             beq $a3 1 case_rotation_1
@@ -736,6 +809,29 @@ j function_end
         jr $ra
         
         
+        clear_collision:
+          la $t0, collision_mask
+          li $t1, 0
+          li $t2, '7'
+          clear_loop_top:
+          beq $t1 1024 clear_loop_end
+          sb $t2, 0($t0)
+          
+          
+          addi $t0, $t0, 1
+          addi $t1, $t1, 1
+          j clear_loop_top
+          clear_loop_end:
+          
+          
+        
+        
+        jr $ra
+        
+        
+        
+        
+        
         add_tetronimo_collider:
         # a0 tetronimo type
         # a1 x
@@ -846,6 +942,24 @@ j function_end
         sw $t0, curr_block_x
         sw $t1, curr_block_y   
         sb $a0, curr_block_type
+        
+
+        addi $sp, $sp, -4   
+        sw $ra, 0($sp) 
+        add $a0, $zero, $a0
+        add $a1, $zero, $t0
+        add $a2, $zero, $t1
+        lb $a3, curr_block_rotation
+        jal place_meeting_block
+        lw $ra, 0($sp)
+        addi $sp, $sp, 4
+        beq $v0 1 game_over_condition
+        jr $ra
+        game_over_condition:
+        li $t0, 2
+        sw $t0, game_state
+        
+        
         jr $ra
         
         check_rows_complete:
