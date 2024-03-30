@@ -154,7 +154,7 @@ c_full:
     syscall
     jr $ra
 
-# Function to play a note D with a half note duration
+# Function to play a note D with a full note duration
 d_full:
     li $v0, 33    # async play note syscall
     li $a0, 62    # midi pitch
@@ -164,7 +164,7 @@ d_full:
     syscall
     jr $ra
     
-# Function to play a note E with a half note duration
+# Function to play a note E with a full note duration
 e_full:
     li $v0, 33    # async play note syscall
     li $a0, 64    # midi pitch
@@ -174,7 +174,7 @@ e_full:
     syscall
     jr $ra
 
-# Function to play a note F with a half note duration
+# Function to play a note F with a full note duration
 f_full:
     li $v0, 33    # async play note syscall
     li $a0, 65    # midi pitch
@@ -184,7 +184,7 @@ f_full:
     syscall
     jr $ra
 
-# Function to play a note G with a half note duration
+# Function to play a note G with a full note duration
 g_full:
     li $v0, 33    # async play note syscall
     li $a0, 67    # midi pitch
@@ -194,7 +194,7 @@ g_full:
     syscall
     jr $ra
     
-# Function to play a note A with a half note duration
+# Function to play a note A with a full note duration
 a_full:
     li $v0, 33    # async play note syscall
     li $a0, 69    # midi pitch
@@ -204,7 +204,7 @@ a_full:
     syscall
     jr $ra
     
-# Function to play a note B with a half note duration
+# Function to play a note B with a full note duration
 b_full:
     li $v0, 33    # async play note syscall
     li $a0, 71    # midi pitch
@@ -214,6 +214,7 @@ b_full:
     syscall
     jr $ra
     
+# Function to play a note B with a one and a half note duration
 b_one_and_half:
     li $v0, 33    # async play note syscall
     li $a0, 71    # midi pitch
@@ -223,7 +224,7 @@ b_one_and_half:
     syscall
     jr $ra
 
-# Function to play a note E with a half note duration
+# Function to play a note E with a one and a half note duration
 e_one_and_half:
     li $v0, 33    # async play note syscall
     li $a0, 64    # midi pitch
@@ -233,7 +234,7 @@ e_one_and_half:
     syscall
     jr $ra
     
-# Function to play a note E with a half note duration
+# Function to play a note E with a double note duration
 e_double:
     li $v0, 33    # async play note syscall
     li $a0, 64    # midi pitch
@@ -243,7 +244,7 @@ e_double:
     syscall
     jr $ra
     
-# Function to play a note C with a full note duration
+# Function to play a note C with a double note duration
 c_double:
     li $v0, 33    # async play note syscall
     li $a0, 60    # midi pitch
@@ -253,7 +254,7 @@ c_double:
     syscall
     jr $ra
     
-# Function to play a note D with a half note duration
+# Function to play a note D with a double note duration
 d_double:
     li $v0, 33    # async play note syscall
     li $a0, 62    # midi pitch
@@ -263,7 +264,7 @@ d_double:
     syscall
     jr $ra
     
-# Function to play a note B with a half note duration
+# Function to play a note B with a double note duration
 b_double:
     li $v0, 33    # async play note syscall
     li $a0, 71    # midi pitch
@@ -273,7 +274,7 @@ b_double:
     syscall
     jr $ra
     
-# Function to play a note A with a half note duration
+# Function to play a note A with a double note duration
 a_double:
     li $v0, 33    # async play note syscall
     li $a0, 69    # midi pitch
@@ -283,7 +284,7 @@ a_double:
     syscall
     jr $ra
     
-# Function to play a note G with a half note duration
+# Function to play a note G with a quadruple (4 beat) note duration
 g_quadrup:
     li $v0, 33    # async play note syscall
     li $a0, 67    # midi pitch
@@ -294,7 +295,7 @@ g_quadrup:
     jr $ra
     
 
-# Function to create a full note duration pause
+# Function to create a half note duration pause
 pause_half:
     li $v0, 33        # async play note syscall
     li $a0, 0         # pitch 0 represents silence
