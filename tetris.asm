@@ -19,10 +19,12 @@ ADDR_DSPL: .word 0x10008000 # The address of the bitmap display. Don't forget to
 ADDR_KBRD: .word 0xffff0000 # The address of the keyboard. Don't forget to connect it!
 
 
+
+
 ##############################################################################
 # Mutable Data
 ##############################################################################
-# game values:
+# Game state values:
 time: .word 0
 game_state: .word 0
 # Bitmap Constants:
@@ -55,7 +57,7 @@ c_orange: .word 0xff4000
 c_pink: .word 0xff00ff
 c_purple: .word 0x9100ff
 
-# Tetromino_maps:
+# Tetromino Maps:
 o_bit_map: .byte '0', '0', '0', '0', '0', '1', '1', '0', '0', '1', '1', '0', '0', '0', '0', '0'
 i_bit_map: .byte '0', '0', '1', '0', '0', '0', '1', '0', '0', '0', '1', '0', '0', '0', '1', '0'
 s_bit_map: .byte '0', '0', '0', '0', '0', '1', '1', '0', '1', '1', '0', '0', '0', '0', '0', '0'
@@ -79,213 +81,217 @@ curr_block_x: .word 9
 curr_block_y: .word 5
 curr_block_type: .byte 4
 curr_block_rotation: .byte 0
-
-
 ##############################################################################
 # Code
 ##############################################################################
 	.text
 	.globl main
+	
 
 	# Run the Tetris game.
 main:
     # Initialize the game
-    la $t0, grid_address  # $t0 = base address for display
-    lw $t4, c_white        # $t4 = white
-    lw $t8, c_white        # $t8 = white  
+    la $t0, grid_address    # $t0 = base address for display.  Load base address for display into $t0
+    lw $t4, c_white         # $t4 = white. Load white color into $t4
+    lw $t8, c_white         # $t8 = white. Load white color into $t8  
     
     # Bottom
-    lw $a0, grid_x  # set x coordinate
-    lw $t1, grid_y # store grid_y in t1
-    lw $t2, grid_height
-    add $a1, $t1, $t2 # set y coordinate    
-    lw $a2, grid_width      # set length of line
-    li $a3, 1      # set height of line
-    jal draw_rectangle        # call the rectangle-drawing function
+    lw $a0, grid_x              # Load x coordinate of grid
+    lw $t1, grid_y              # Load y coordinate of grid into $t1
+    lw $t2, grid_height         # Load grid height into $t2
+    add $a1, $t1, $t2           # Calculate bottom y coordinate
+    lw $a2, grid_width          # set length of line. Load grid width into $a2
+    li $a3, 1                   # Set line height to 1 pixel
+    jal draw_rectangle          # Call draw_rectangle to draw bottom of grid
     
-    # Inside of grid:
-    lw $t8, c_grey1        # $t8 = grey1
-    lw $t4, c_grey2        # $t4 = grey2
-    lw $a0, grid_x
-    addi $a0, $a0, 1      # set x coordinate
-    lw $a1, grid_y      # set y coordinate
-    lw $a2, grid_width      # set width of line
-    subi $a2, $a2, 1
-    lw $a3, grid_height      # set height of line
-    jal draw_rectangle        # call the rectangle-drawing function
-    li $s1, 0
+    # Draw inside of grid:
+    lw $t8, c_grey1         # Load grey1 color into $t8
+    lw $t4, c_grey2         # Load grey2 color into $t4
+    lw $a0, grid_x          # Load x coordinate of grid
+    addi $a0, $a0, 1        # Adjust x coordinate
+    lw $a1, grid_y          # Load y coordinate of grid
+    lw $a2, grid_width      # Load grid width into $a2
+    subi $a2, $a2, 1        # Adjust grid width
+    lw $a3, grid_height     # Load grid height into $a3
+    jal draw_rectangle      # Call draw_rectangle to draw inside of grid
+    li $s1, 0               # Initialize $s1 to 0
     
-    lw $t4, c_white        # $t4 = white
-    lw $t8, c_white        # $t8 = white  
-    # Left line
-    lw $a0, grid_x      # set x coordinate
-    lw $a1, grid_y      # set y coordinate
-    li $a2, 1      # set length of line to 8
-    lw $a3, grid_height      # set height of line
-    jal draw_rectangle        # call the rectangle-drawing function
+    lw $t4, c_white          # Load white color into $t4
+    lw $t8, c_white          # Load white color into $t8  
     
-    # Right
+    # Draw left line of grid
+    lw $a0, grid_x          # Load x coordinate of grid
+    lw $a1, grid_y          # Load y coordinate of grid
+    li $a2, 1               # Set line length to 1 pixel
+    lw $a3, grid_height     # Load grid height into $a3
+    jal draw_rectangle      # Call draw_rectangle to draw left line of grid
     
-    lw $a0, grid_x      # set x coordinate
-    lw $t1, grid_width
-    add $a0, $a0, $t1
-    subi $a0, $a0, 1
-    lw $a1, grid_y      # set y coordinate
-    li $a2, 1     # set length of line
-    lw $a3, grid_height      # set height of line 
-    jal draw_rectangle        # call the rectangle-drawing function
-    jal create_new_tetronimo
+    # Draw right line of grid
+    lw $a0, grid_x               # Load x coordinate of grid
+    lw $t1, grid_width           # Load grid width into $t1
+    add $a0, $a0, $t1            # Add grid width to x coordinate to get right edge
+    subi $a0, $a0, 1             # Adjust x coordinate to draw the right line
+    lw $a1, grid_y               # Load y coordinate of grid
+    li $a2, 1                    # Set line length to 1 pixel
+    lw $a3, grid_height          # Load grid height into $a3
+    jal draw_rectangle           # Call draw_rectangle to draw right line of grid
+    jal create_new_tetronimo     # Call function to make a new Tetronimo
 
 game_loop:
 	# 1a. Check if key has been pressed
-	lw $t0, ADDR_KBRD               # $t0 = base address for keyboard
+	lw $t0, ADDR_KBRD               # $t0 = base address for keyboard. Load base address for keyboard into $t0
     lw $t8, 0($t0)                  # Load first word from keyboard
-    bne $t8, 1, no_keyboard_input      # If first word 1, key is pressed
+    bne $t8, 1, no_keyboard_input   # If first word 1, key is pressed
     # 1b. Check which key has been pressed
     jal respond_to_keyboard_input
+    
     no_keyboard_input:
-    lw $t3, game_state
-    
-    
-    beq $t3, 0 no_pause
-    bne $t3, 1 game_over
-    lw $t0 ADDR_DSPL
-	li $a0 7
-	li $a1 26
-	li $a2 2
-	li $a3 0
-    jal draw_new_block
-    j sleep
+    lw $t3, game_state              # Load game state into $t3
+    # Check game state
+    beq $t3, 0 no_pause             # If game state is 0, skip pause state
+    bne $t3, 1 game_over            # If game state is not 1, check for game over
+    lw $t0 ADDR_DSPL                # Load address of bitmap display into $t0
+	li $a0 7                        # Set block type
+	li $a1 26                       # Set x coordinate
+	li $a2 2                        # Set y coordinate
+	li $a3 0                        # Set rotation
+    jal draw_new_block              # Call function to draw new block
+    j sleep                         # Jump to sleep state
     game_over:
-    lw $t0 ADDR_DSPL
-	li $a0 8
-	li $a1 26
-	li $a2 2
-	li $a3 0
-    jal draw_new_block
-    j sleep
+    lw $t0 ADDR_DSPL                # Load address of bitmap display into $t0
+	li $a0 8                        # Set block type
+	li $a1 26                       # Set x coordinate
+	li $a2 2                        # Set y coordinate
+	li $a3 0                        # Set rotation
+    jal draw_new_block              # Call function to draw new block
+    j sleep                         # Jump to sleep state
     no_pause:
     
     
     # 2a. Check for collisions
 	# 2b. Update locations (paddle, ball)
 	# 3. Draw the screen
-	lw $a0 ADDR_DSPL
-	la $a1 grid_address
-	jal draw_grid
-	jal draw_collision_box
-	
+	lw $a0 ADDR_DSPL                   # Load address of bitmap display into $a0
+	la $a1 grid_address                # Load address of grid into $a1
+	jal draw_grid                      # Call function to draw grid
+	jal draw_collision_box             # Call function to draw collision box
 	
 	# Draw Block
-	lw $t0 ADDR_DSPL
-	lb $a0 curr_block_type
-	lw $a1 curr_block_x
-	lw $a2 curr_block_y
-	lb $a3 curr_block_rotation
-	jal draw_new_block
-	lb $a0 curr_block_type
+	lw $t0 ADDR_DSPL                        # Load address of bitmap display into $t0
+	lb $a0 curr_block_type                  # Load current block type into $a0  
+	lw $a1 curr_block_x                     # Load current block x coordinate into $a1
+	lw $a2 curr_block_y                     # Load current block y coordinate into $a2
+	lb $a3 curr_block_rotation              # Load current block rotation into $a3
+	jal draw_new_block                      # Call function to draw new block
+	lb $a0 curr_block_type                  # Load current block type into $a0
 	
-	jal check_rows_complete
-	# gravity:
-	lw $t0 time
-	addi $t0, $t0, 1
-	sw $t0 time
-	bne $t0, 16 sleep
-	li $t0 0
-	sw $t0 time
-	jal respond_to_S
+	jal check_rows_complete                # Call function to check for completed rows
+	
+	# Gravity:
+	lw $t0 time                    # Load time into $t0
+	addi $t0, $t0, 1               # Increment time
+	sw $t0 time                    # Store updated time
+	bne $t0, 16 sleep              # If time is not 16, go to sleep state
+	li $t0 0                       # Reset time to 0
+	sw $t0 time                    # Store reset time
+	jal respond_to_S               # Call function to respond to 'S' key
 	
 	sleep:
 	# 4. Sleep
-    li $v0, 32
-    li $a0, 17
-    syscall
+    li $v0, 32           # Set syscall code for sleep
+    li $a0, 17           # Set time to sleep (in milliseconds)
+    syscall              # Perform syscall to sleep
     #5. Go back to 1
    
-    j game_loop
-
+    j game_loop         # Jump back to the beginning of the game loop
 
 j function_end
+
+# Function to respond to keyboard input
     respond_to_keyboard_input:
     # - $t0: address of keyboard
     # - $t1: key_pressed
         lw $t0, ADDR_KBRD               # $t0 = base address for keyboard
         lw $t1, 4($t0)                  # Load second word from keyboard
         
-        beq $t1, 0x70, respond_to_p
+        beq $t1, 0x70, respond_to_p              # Check if 'p' key is pressed
         
-        lw $t3, game_state
-        bne $t3, 0 end_respond_to_keyboard
+        lw $t3, game_state                           # Load game state into $t3
+        bne $t3, 0 end_respond_to_keyboard           # If game state is not 0, skip to end_respond_to_keyboard
         
+        # Check which key is pressed
         beq $t1, 0x61, respond_to_A
         beq $t1, 0x77, respond_to_W
         beq $t1, 0x73, respond_to_S
         beq $t1, 0x64, respond_to_D
-        j end_respond_to_keyboard
+        j end_respond_to_keyboard               # Jump to end if no valid key pressed
         
+        # Handle 'p' key press
         respond_to_p:
-            lw $t2, game_state
-            beq $t2, 0, change_pause_state_to_paused
-            beq $t2, 1, change_pause_state_to_unpause
-            beq $t2, 2, retry
+            lw $t2, game_state                                          # Load game state into $t2 
+            # Check current game state and perform corresponding action
+            beq $t2, 0, change_pause_state_to_paused                    # If game is not paused, change state to paused    
+            beq $t2, 1, change_pause_state_to_unpause                   # If game is paused, change state to unpause
+            beq $t2, 2, retry                                           # If game over, retry
             j end_respond_to_keyboard
             change_pause_state_to_paused:
-            li $t2, 1
-            sw $t2, game_state
+            li $t2, 1                                # Set game state to paused
+            sw $t2, game_state                       # Store updated game state
             j end_respond_to_keyboard
             change_pause_state_to_unpause:
-            li $t2, 0
-            sw $t2, game_state
+            li $t2, 0                           # Set game state to unpause
+            sw $t2, game_state                  # Store updated game state
             j end_respond_to_keyboard
+            
+            # Retry the game
             retry:
-            li $t2, 0
-            sw $t2, game_state
-            addi $sp, $sp, -4   
-            sw $ra, 0($sp) 
-            jal clear_collision
-            lw $ra, 0($sp)
-            addi $sp, $sp, 4
-            
-            
+            li $t2, 0                               # Set game state to initial state
+            sw $t2, game_state                      # Store updated game state
+            addi $sp, $sp, -4                       # Adjust stack pointer
+            sw $ra, 0($sp)                          # Save return address
+            jal clear_collision                     # Call function to clear collisions
+            lw $ra, 0($sp)                          # Restore return address
+            addi $sp, $sp, 4                        # Restore stack pointer
             
             j end_respond_to_keyboard
             
-            
+        # Respond to 'A' key press (move left)
         respond_to_A:
             lw $t2, curr_block_x
-            addi $t2, $t2, -1
-                
-            addi $sp, $sp, -4   
-            sw $t2, 0($sp)
-            addi $sp, $sp, -4   
-            sw $ra, 0($sp) 
+            addi $t2, $t2, -1                           # Decrement x coordinate
+            
+            # Check for collision after moving left    
+            addi $sp, $sp, -4                           # Adjust stack pointer
+            sw $t2, 0($sp)                              # Save updated x coordinate
+            addi $sp, $sp, -4                           
+            sw $ra, 0($sp)                              # Save return address
             lb $a0, curr_block_type
             add $a1, $zero, $t2
             lw $a2, curr_block_y
             lb $a3, curr_block_rotation
-            jal place_meeting_block
+            jal place_meeting_block                     # Check for collision
             addi $sp, $sp, -4   
-            sw $v0, 0($sp)
-            jal play_lr_sound_effect
-            lw $v0, 0($sp)
-            addi $sp, $sp, 4
+            sw $v0, 0($sp)                              # Save collision result
+            jal play_lr_sound_effect                    # Play left/right movement sound effect
+            lw $v0, 0($sp)                              # Load collision result
+            addi $sp, $sp, 4                            # Restore stack pointer
             lw $ra, 0($sp)
             addi $sp, $sp, 4
             lw $t2, 0($sp)
             addi $sp, $sp, 4
-            bne $v0, 0, end_respond_to_keyboard
-            sw $t2, curr_block_x
-            
-            
+            bne $v0, 0, end_respond_to_keyboard         # If collision, jump to end
+            sw $t2, curr_block_x                         # Update x coordinate
             
             j end_respond_to_keyboard
+        
+        # Respond to 'W' key press (rotate)
         respond_to_W:
             lb $t2, curr_block_rotation
             addi $t2, $t2, 1
             bne $t2, 4, update_rotation
             li $t2, 0
-            update_rotation:
             
+            update_rotation:
             addi $sp, $sp, -4   
             sw $t2, 0($sp)
             addi $sp, $sp, -4   
@@ -294,24 +300,27 @@ j function_end
             lw $a1, curr_block_x
             lw $a2, curr_block_y
             add $a3, $t2, $zero
-            jal place_meeting_block
+            jal place_meeting_block                     # Check for collision
             addi $sp, $sp, -4   
-            sw $v0, 0($sp)
-            jal play_lr_sound_effect
-            lw $v0, 0($sp)
-            addi $sp, $sp, 4
-            lw $ra, 0($sp)
-            addi $sp, $sp, 4
+            sw $v0, 0($sp)                              # Save collision result
+            jal play_lr_sound_effect                    # Play left/right movement sound effect
+            lw $v0, 0($sp)                              # Load collision result
+            addi $sp, $sp, 4                            # Restore stack pointer
+            lw $ra, 0($sp)                              # Restore return address
+            addi $sp, $sp, 4                            # Restore stack pointer
             lw $t2, 0($sp)
             addi $sp, $sp, 4
-            bne $v0, 0, end_respond_to_keyboard
+            bne $v0, 0, end_respond_to_keyboard         # If collision, jump to end
             
-            sb $t2, curr_block_rotation
+            sb $t2, curr_block_rotation                 # Update rotation
             j end_respond_to_keyboard
+        
+        # Respond to 'D' key press (move right)
         respond_to_D:
             lw $t2, curr_block_x
             addi $t2, $t2, 1
             
+            # Check for collision after moving right
             addi $sp, $sp, -4   
             sw $t2, 0($sp)
             addi $sp, $sp, -4   
@@ -332,9 +341,11 @@ j function_end
             addi $sp, $sp, 4
             
             
-            bne $v0, 0, end_respond_to_keyboard
-            sw $t2, curr_block_x
-            j end_respond_to_keyboard
+            bne $v0, 0, end_respond_to_keyboard                     # If collision, jump to end_respond_to_keyboard
+            sw $t2, curr_block_x                                    # Update x coordinate
+            j end_respond_to_keyboard                               # Jump to end
+        
+        # Respond to 'S' key press (move down)
         respond_to_S:
             lw $t2, curr_block_y
             addi $t2, $t2, 1
@@ -356,16 +367,16 @@ j function_end
             sw $t2, curr_block_y
             j end_respond_to_keyboard
             collide_down:
-            lb $a0 curr_block_type
+            lb $a0 curr_block_type                              
 	        lw $a1 curr_block_x
 	        lw $a2 curr_block_y
 	        lb $a3 curr_block_rotation
-            addi $sp, $sp, -4   
+            addi $sp, $sp, -4                               # Adjust stack pointer
             sw $ra, 0($sp)       
-    	    jal add_tetronimo_collider
-    	    jal create_new_tetronimo
-            lw $ra, 0($sp)
-            addi $sp, $sp, 4
+    	    jal add_tetronimo_collider                      # Add tetromino collider
+    	    jal create_new_tetronimo                        # Create new tetromino
+            lw $ra, 0($sp)                                  # Restore return address
+            addi $sp, $sp, 4                                # Restore stack pointer
             
             
     end_respond_to_keyboard:
@@ -386,17 +397,17 @@ j function_end
     # - $t5: the bitmap location for the end of the horizontal line.
     # - $t7: stores whether the coordinate is odd or even
     # - $t8: colour value 2
-    sll $t2, $a1, 7         # convert vertical offset to pixels (by multiplying $a1 by 128)
-    sll $t6, $a3, 7         # convert height of rectangle from pixels to rows of bytes (by multiplying $a3 by 128)
-    add $t6, $t2, $t6       # calculate value of $t2 for the last line in the rectangle.
+    sll $t2, $a1, 7                         # Convert vertical offset to pixels (by multiplying $a1 by 128)
+    sll $t6, $a3, 7                         # Convert height of rectangle from pixels to rows of bytes (by multiplying $a3 by 128)
+    add $t6, $t2, $t6                       # Calculate value of $t2 for the last line in the rectangle.
     addi $t7, $zero, 0
         draw_rectangle_outer_top:
-        sll $t1, $a0, 2         # convert horizontal offset to pixels (by multiplying $a0 by 4)
-        sll $t5, $a2, 2         # convert length of line from pixels to bytes (by multiplying $a2 by 4)
-        add $t5, $t1, $t5       # calculate value of $t1 for end of the horizontal line.
+        sll $t1, $a0, 2                     # Convert horizontal offset to pixels (by multiplying $a0 by 4)
+        sll $t5, $a2, 2                     # Convert length of line from pixels to bytes (by multiplying $a2 by 4)
+        add $t5, $t1, $t5                   # Calculate value of $t1 for end of the horizontal line.
             draw_rectangle_inner_top:
-            add $t3, $t1, $t2           # store the total offset of the starting pixel (relative to $t0)
-            add $t3, $t0, $t3           # calculate the location of the starting pixel ($t0 + offset)
+            add $t3, $t1, $t2               # Store the total offset of the starting pixel (relative to $t0)
+            add $t3, $t0, $t3               # Calculate the location of the starting pixel ($t0 + offset)
             beq $t7, $zero, caseblue
             casered:
             sw $t8, 0($t3)
@@ -408,13 +419,13 @@ j function_end
             draw_rectangle_endcases:
             j colorsetcomplete
             colorsetcomplete:
-            addi $t1, $t1, 4            # move horizontal offset to the right by one pixel
-            beq $t1, $t5, draw_rectangle_inner_end     # break out of the line-drawing loop
-            j draw_rectangle_inner_top                 # jump to the start of the inner loop
+            addi $t1, $t1, 4                # Move horizontal offset to the right by one pixel
+            beq $t1, $t5, draw_rectangle_inner_end     # Break out of the line-drawing loop
+            j draw_rectangle_inner_top                 # Jump to the start of the inner loop
             draw_rectangle_inner_end:
-        addi $t2, $t2, 128          # move vertical offset down by one line
-        beq $t2, $t6, draw_rectangle_outer_end     # on last line, break out of the outer loop
-        j draw_rectangle_outer_top                 # jump to the top of the outer loop
+        addi $t2, $t2, 128                  # Move vertical offset down by one line
+        beq $t2, $t6, draw_rectangle_outer_end         # On last line, break out of the outer loop
+        j draw_rectangle_outer_top                     # Jump to the top of the outer loop
         draw_rectangle_outer_end:
         jr $ra
     
@@ -438,7 +449,6 @@ j function_end
             j draw_grid_loop_top
         draw_grid_end_loop:
     jr $ra
-    
     
     
     
@@ -560,48 +570,54 @@ j function_end
         
         
     place_meeting:
-    # - $a0 x coordinate
-    # - $a1 y coordinate
-    # - $t0 minimum x
-    # - $t1 maximum x
-    # - $t2 maximum y
-    lw $t0, grid_x
-    addi $t0, $t0, 1
-    lw $t1, grid_width
-    add $t1, $t1, $t0
-    lw $t2, grid_y
-    lw $t3, grid_height
-    add $t2, $t2, $t3
-    sub $t0, $t0, $a0
-    sub $t1, $t1, $a0
-    sub $t2, $t2, $a1
-    subi $t1, $t1, 2
-    blez $t0, place_meeting_condition1
-    li $v0 1
-    jr $ra 
+    # Check if there's a collision between the block and the grid boundaries
+    # - $a0: x coordinate of the block
+    # - $a1: y coordinate of the block
+    # - $t0: minimum x coordinate of the grid
+    # - $t1: maximum x coordinate of the grid
+    # - $t2: maximum y coordinate of the grid
+    lw $t0, grid_x                                      # Load minimum x coordinate of the grid
+    addi $t0, $t0, 1                                    # Add 1 to adjust for display border
+    lw $t1, grid_width                                  # Load maximum x coordinate of the grid
+    add $t1, $t1, $t0                                   # Calculate maximum x coordinate
+    lw $t2, grid_y                                      # Load y coordinate of the grid
+    lw $t3, grid_height                                 # Load height of the grid
+    add $t2, $t2, $t3                                   # Calculate maximum y coordinate
+    
+    sub $t0, $t0, $a0                                   # Calculate horizontal distance to left boundary
+    sub $t1, $t1, $a0                                   # Calculate horizontal distance to right boundary
+    sub $t2, $t2, $a1                                   # Calculate vertical distance to bottom boundary
+    
+    subi $t1, $t1, 2                                    # Adjust for block width
+    
+    blez $t0, place_meeting_condition1                  # If left boundary collision, jump to condition1
+    li $v0 1                                            # Set collision flag to 1
+    jr $ra                                              # Return from function
     place_meeting_condition1:
-    bgtz $t1, place_meeting_condition2
-    li $v0 1
-    jr $ra 
+    bgtz $t1, place_meeting_condition2                  # If no right boundary collision, jump to condition2
+    li $v0 1                                            # Set collision flag to 1
+    jr $ra                                              # Return from function
     place_meeting_condition2:
-    bgtz $t2, place_meeting_condition3
-    li $v0 1
-    jr $ra 
+    bgtz $t2, place_meeting_condition3                  # If no bottom boundary collision, jump to condition3
+    li $v0 1                                            # Set collision flag to 1
+    jr $ra                                              # Return from function
     place_meeting_condition3:
-    la $t3 collision_mask
-    add $t3, $t3, $a0
-    sll $t4, $a1 5
-    add $t3, $t3, $t4 # address of x ,y coord in collision
-    lb $t4, 0($t3)
-    beq $t4 '7' gg_no_collisions
-    li $v0 1
+    la $t3 collision_mask                               
+    add $t3, $t3, $a0                                   # Calculate address of collision at (x,y)
+    sll $t4, $a1 5                                      # Calculate offset for y coordinate
+    add $t3, $t3, $t4                                   # Add y offset to address
+    lb $t4, 0($t3)                                      # Load collision data at address
+    
+    beq $t4 '7' gg_no_collisions                        # If no collision, jump to gg_no_collisions
+    li $v0 1                                            # Set collision flag to 1
     jr $ra 
     gg_no_collisions:
-    li $v0 0
+    li $v0 0                                            # Set collision flag to 0
     jr $ra  
     
     
     place_meeting_block:
+    # Check if the block collides with any obstacles in the grid
     # - $t0 display address
     # - $a0 code for the block that will be drawn
     # - $a1 x_coordinate
@@ -613,7 +629,7 @@ j function_end
     # - $t5 range from 1 to 16
     # - $t6 row complete change
     # - $t7 column complete change
-        beq $a0 0 case_check_o
+        beq $a0 0 case_check_o                      
         beq $a0 1 case_check_i
         beq $a0 2 case_check_s
         beq $a0 3 case_check_z
@@ -621,6 +637,7 @@ j function_end
         beq $a0 5 case_check_j
         beq $a0 6 case_check_t
         
+        # Check for specific block types and rotations
         case_check_o:
             la $t1 o_bit_map
             j check_decide_rotation_case
@@ -643,15 +660,17 @@ j function_end
             la $t1 t_bit_map
             j check_decide_rotation_case 
         
+        # Decide which rotation case to check based on rotation parameter
         check_decide_rotation_case:
             beq $a3 0 case_check_rotation_0
             beq $a3 1 case_check_rotation_1
             beq $a3 2 case_check_rotation_2
             beq $a3 3 case_check_rotation_3
+        # Check for collision in each rotation case
         case_check_rotation_0:
-            li $t6 1
-            li $t7 0
-            j begin_checking_block
+            li $t6 1                                # Set row complete change for rotation 0
+            li $t7 0                                # Set column complete change for rotation 0
+            j begin_checking_block                  # Jump to begin checking block
         case_check_rotation_1:
             addi $t1, $t1, 3
             li $t6 4
@@ -676,17 +695,20 @@ j function_end
         # - $t4 maximum x
         # - $t5 maximum y
         begin_checking_block:
-            add $t3, $zero, $a2
-            addi $t5, $t3, 4
+            add $t3, $zero, $a2                                                 # Initialize y coordinate for checking
+            addi $t5, $t3, 4                                                    # Calculate maximum y coordinate for loop
+            # Loop through each column of the block
             check_loop_through_column:
-                beq $t5, $t3 check_loop_through_column_end
-                add $t2, $zero, $a1
-                addi $t4, $t2, 4
+                beq $t5, $t3 check_loop_through_column_end                      # Check if the end of the column is reached
+                add $t2, $zero, $a1                                             # Initialize x coordinate for checking
+                addi $t4, $t2, 4                                                # Calculate maximum x coordinate for loop
+                # Loop through each row of the block
                 check_loop_through_row:
-                    beq $t4, $t2 check_loop_through_row_end
-                    lb $t0, 0($t1)
-                    beq $t0, '0' check_loop_row_update_vals
-                    # Store registers in the stack
+                    beq $t4, $t2 check_loop_through_row_end                         # Check if the end of the row is reached
+                    lb $t0, 0($t1)                                                  # Load byte from bitmap
+                    beq $t0, '0' check_loop_row_update_vals                         # Check if the byte is non-zero (indicating a block)
+                    
+                    # Store registers in the stack to preserve their values
                     addi $sp, $sp, -4       
                     sw $ra, 0($sp)          
                     addi $sp, $sp, -4       
@@ -711,11 +733,14 @@ j function_end
                     sw $t4, 0($sp) 
                     addi $sp, $sp, -4   
                     sw $t5, 0($sp) 
+                    
+                    # Set arguments for place_meeting function
                     add $a0, $zero, $t2
                     add $a1, $zero, $t3
-                    jal place_meeting
+                    jal place_meeting                       # Call place_meeting function
+                    # Retrieve saved registers from the stack
                     lw $t5, 0($sp)
-                    addi $sp, $sp, 4
+                    addi $sp, $sp, 4                        # Deallocate space for $ra from the stack
                     lw $t4, 0($sp)
                     addi $sp, $sp, 4
                     lw $t3, 0($sp)
@@ -738,31 +763,35 @@ j function_end
                     addi $sp, $sp, 4
                     lw $ra, 0($sp)
                     addi $sp, $sp, 4
-                    beq $v0, 1 place_meeting_block_end
+                    beq $v0, 1 place_meeting_block_end    # Check if there is a collision
                     
+                    # Update address to check next row
                     check_loop_row_update_vals:
                     add $t1, $t1, $t6
-                    addi $t2, $t2, 1
+                    addi $t2, $t2, 1                      # Move to next column
                     j check_loop_through_row
+                # Move to next column in bitmap
                 check_loop_through_row_end:
                 add $t1, $t1, $t7
-                addi $t3, $t3, 1
+                addi $t3, $t3, 1                          # Move to next row in block
                 j check_loop_through_column
-            check_loop_through_column_end:         
+            check_loop_through_column_end:   
         place_meeting_block_end:
         jr $ra
         
+        # Draw collision box based on collision mask
         draw_collision_box:
         # $t0: position in bitmap
         # $t1: position in collision_box
         
-        lw $t0, ADDR_DSPL
-        la $t1, collision_mask
+        lw $t0, ADDR_DSPL                                               # Load display address into $t0
+        la $t1, collision_mask                                          # Load address of collision mask into $t1
         li $t2, 0
+        # Loop through each byte in the collision mask
         top_draw_collision_box:
-            beq $t2 1024 end_draw_collision_box
-            lb $t3, 0($t1)
-            beq $t3, '7' draw_collisions_update_val
+            beq $t2 1024 end_draw_collision_box                         # Check if the loop counter has reached the end
+            lb $t3, 0($t1)                                              # Load byte from collision mask
+            beq $t3, '7' draw_collisions_update_val                     # Check if the byte represents a block
             beq $t3, '0' case_d_o
             beq $t3, '1' case_d_i
             beq $t3, '2' case_d_s
@@ -801,6 +830,7 @@ j function_end
                 j draw_collisions_update_val
             
             draw_collisions_update_val:
+            # Move to next position in bitmap
             addi $t0, $t0, 4
             addi $t1, $t1, 1
             addi $t2, $t2, 1
@@ -810,29 +840,26 @@ j function_end
         
         
         clear_collision:
+          # Load the address of collision_mask into $t0
           la $t0, collision_mask
           li $t1, 0
-          li $t2, '7'
+          li $t2, '7'                                       # Initialize $t2 to ASCII value '7' (indicating no collision)
+          
+          
           clear_loop_top:
-          beq $t1 1024 clear_loop_end
-          sb $t2, 0($t0)
-          
-          
-          addi $t0, $t0, 1
-          addi $t1, $t1, 1
+          beq $t1 1024 clear_loop_end                       # Check if the loop counter has reached 1024 (size of collision_mask)
+          sb $t2, 0($t0)                                    # Store ASCII '7' (indicating no collision) into the collision mask
+          addi $t0, $t0, 1                                  # Increment memory address to move to the next byte in the collision mask
+          addi $t1, $t1, 1                                  # Increment loop counter
           j clear_loop_top
           clear_loop_end:
           
-          
-        
         
         jr $ra
         
         
-        
-        
-        
         add_tetronimo_collider:
+        # Determine the type of tetromino and set the corresponding bitmap address
         # a0 tetronimo type
         # a1 x
         # a2 y
@@ -881,6 +908,7 @@ j function_end
             li $t5 '6'
             j decide_rotation_case_c
         
+        # Decide rotation case based on rotation parameter
         decide_rotation_case_c:
             beq $a3 0 case_rotation_0_c
             beq $a3 1 case_rotation_1_c
@@ -905,20 +933,25 @@ j function_end
             li $t6 -4
             li $t7 17
             j begin_drawing_block_c
+            
+        # Start drawing the block by setting up the row and column
         begin_drawing_block_c:
         sll $t3, $a2 5
         la $t2, collision_mask
         add $t2, $t2, $t3
         add $t2, $t2, $a1
         li $t4 0
+        # Loop through each row of the block
         draw_block_row_c:
         beq $t4 4 draw_block_row_end_c
         li $t3 0
+            # Loop through each column of the block
             draw_block_column_c:
                 beq $t3 4 draw_block_column_end_c
                 lb $t0 0($t1)
-                beq $t0 '0' updata_val
-                sb $t5 0($t2)
+                beq $t0 '0' updata_val                              # Check if the current block is empty
+                sb $t5 0($t2)                                       # Store the tetromino type into the collision mask
+                # Update addresses for next block
                 updata_val:
                 add $t1, $t1, $t6
                 addi $t2, $t2, 1
@@ -933,32 +966,37 @@ j function_end
         jr $ra
     
         create_new_tetronimo:
-        li $v0 , 42
+        li $v0 , 42                                                 # System call for creating a new tetromino
         li $a0 , 0
         li $a1 , 7
         syscall 
+        # Get the starting coordinates for the new tetromino
         lw $t0, block_start_x
         lw $t1, block_start_y
+        # Store the starting coordinates
         sw $t0, curr_block_x
         sw $t1, curr_block_y   
+        # Store the tetromino type
         sb $a0, curr_block_type
-        
-
+        # Store the return address in the stack
         addi $sp, $sp, -4   
         sw $ra, 0($sp) 
+        # Set up arguments for place_meeting_block function
         add $a0, $zero, $a0
         add $a1, $zero, $t0
         add $a2, $zero, $t1
         lb $a3, curr_block_rotation
+        
+        # Call place_meeting_block function to check if the new tetromino collides
         jal place_meeting_block
+        # Retrieve the return address from the stack
         lw $ra, 0($sp)
         addi $sp, $sp, 4
-        beq $v0 1 game_over_condition
+        beq $v0 1 game_over_condition                               # Check if the new tetromino collides
         jr $ra
         game_over_condition:
         li $t0, 2
         sw $t0, game_state
-        
         
         jr $ra
         
@@ -1013,39 +1051,34 @@ j function_end
         done_completing_rows:
         jr $ra
         
-        
+        # Function to play the delete sound effect
         play_delete_sound_effect:
-            li  $v0, 33        # Load immediate value 33 into register $v0 (syscall code for playing sound)
-            addi $a0, $zero, 50    # Add immediate: set $a0 to the frequency of the sound (50)
-            addi $a1, $zero, 100   # Add immediate: set $a1 to the volume of the sound (100)
-            addi $a2, $zero, 121   # Add immediate: set $a2 to the wave type of the sound (121)
-            addi $a3, $zero, 127   # Add immediate: set $a3 to the sound duration (127)
-            syscall            # Perform the system call to play the sound
+            li  $v0, 33                                 # Load immediate value 33 into register $v0 (syscall code for playing sound)
+            addi $a0, $zero, 50                         # Add immediate: set $a0 to the frequency of the sound (50)
+            addi $a1, $zero, 100                        # Add immediate: set $a1 to the volume of the sound (100)
+            addi $a2, $zero, 121                        # Add immediate: set $a2 to the wave type of the sound (121)
+            addi $a3, $zero, 127                        # Add immediate: set $a3 to the sound duration (127)
+            syscall                                     # Perform the system call to play the sound
         j complete_row_found             
         
         # Function to play the move left/right sound effect
         play_lr_sound_effect:
-            li  $v0, 33        # Load immediate value 33 into register $v0 (syscall code for playing sound)
-            addi $a0, $zero, 50    # Add immediate: set $a0 to the frequency of the sound (50)
-            addi $a1, $zero, 100   # Add immediate: set $a1 to the volume of the sound (100)
-            addi $a2, $zero, 50   # Add immediate: set $a2 to the wave type of the sound (121)
-            addi $a3, $zero, 127   # Add immediate: set $a3 to the sound duration (127)
-            syscall            # Perform the system call to play the sound
-            jr $ra             # Jump back to the calling routine (likely the end of a function)
+            li  $v0, 33                                 # Load immediate value 33 into register $v0 (syscall code for playing sound)
+            addi $a0, $zero, 50                         # Add immediate: set $a0 to the frequency of the sound (50)
+            addi $a1, $zero, 100                        # Add immediate: set $a1 to the volume of the sound (100)
+            addi $a2, $zero, 50                         # Add immediate: set $a2 to the wave type of the sound (50)
+            addi $a3, $zero, 127                        # Add immediate: set $a3 to the sound duration (127)
+            syscall                                     # Perform the system call to play the sound
+            jr $ra                                      # Jump back to the calling routine (likely the end of a function)
             
         # Function to play the clap sound effect
         play_clap_sound_effect:
-            li  $v0, 33        # Load immediate value 33 into register $v0 (syscall code for playing sound)
-            addi $a0, $zero, 100  # Set $a0 to the frequency of the clap sound (adjust as needed)
-            addi $a1, $zero, 100   # Set $a1 to the volume of the clap sound
-            addi $a2, $zero, 5     # Set $a2 to the wave type for a simple waveform for the clap sound
-            addi $a3, $zero, 127   # Set $a3 to the sound duration (adjust as needed)
-            syscall            # Perform the system call to play the sound
-            jr $ra             # Jump back to the calling routine (likely the end of a function)
-        
-        
-        
-        
-        
+            li  $v0, 33                                 # Load immediate value 33 into register $v0 (syscall code for playing sound)
+            addi $a0, $zero, 100                        # Set $a0 to the frequency of the clap sound 
+            addi $a1, $zero, 100                        # Set $a1 to the volume of the clap sound
+            addi $a2, $zero, 5                          # Set $a2 to the wave type for a simple waveform for the clap sound
+            addi $a3, $zero, 127                        # Set $a3 to the sound duration 
+            syscall                                     # Perform the system call to play the sound
+            jr $ra                                      # Jump back to the calling routine (likely the end of a function)
+         
 function_end:
-
