@@ -158,6 +158,12 @@ game_loop:
     jal draw_new_block              # Call function to draw new block
     j sleep                         # Jump to sleep state
     game_over:
+    lw $t0 ADDR_DSPL                # Load address of bitmap display into $t0
+	li $a0 8                        # Set block type
+	li $a1 26                       # Set x coordinate
+	li $a2 2                        # Set y coordinate
+	li $a3 0                        # Set rotation
+    jal draw_new_block              # Call function to draw new block
     # Play Tetris theme music: Top of music sheet
     jal e_full
     jal b_half
@@ -205,12 +211,7 @@ game_loop:
     jal c_double 
     jal a_double    # Eleventh 4 beats done 
     jal g_quadrup   # Twelveth 4 beats done
-    lw $t0 ADDR_DSPL                # Load address of bitmap display into $t0
-	li $a0 8                        # Set block type
-	li $a1 26                       # Set x coordinate
-	li $a2 2                        # Set y coordinate
-	li $a3 0                        # Set rotation
-    jal draw_new_block              # Call function to draw new block
+    
     j sleep                         # Jump to sleep state
     no_pause:
     
